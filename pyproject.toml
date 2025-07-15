@@ -1,0 +1,23 @@
+[project]
+name = "log_parser"
+version = "0.1.0"
+description = "Парсер логов с поддержкой чтения из Kafka"
+readme = "readme.md"
+requires-python = ">=3.8"
+
+dependencies = [
+  'pydantic>=2.11.0',
+  'pydantic-settings>=2.10.0',
+  'kafka-python>=2.0.2',
+  'clickhouse-driver>=0.2.9',
+  'fastapi>=0.110.0',
+  'uvicorn[standard]>=0.29.0',
+]
+
+
+[project.optional-dependencies]
+dev = [
+  'pytest',
+  'mypy',
+  'ruff',
+]
