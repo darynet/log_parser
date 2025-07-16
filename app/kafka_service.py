@@ -48,9 +48,7 @@ class KafkaService:
             return
 
         self.stop_event.clear()
-        self.consumer_thread = threading.Thread(
-            target=self._consume_messages, args=(message_handler,), daemon=True
-        )
+        self.consumer_thread = threading.Thread(target=self._consume_messages, args=(message_handler,), daemon=True)
         self.consumer_thread.start()
         logger.info("Kafka consumer запущен")
 

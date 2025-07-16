@@ -106,9 +106,3 @@ async def get_logs(limit: int = Query(100, ge=1, le=1000), offset: int = Query(0
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при запросе логов из ClickHouse: {e}")
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
