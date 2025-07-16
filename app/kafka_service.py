@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Any, Callable
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import time
 from config import settings
 
@@ -22,7 +23,8 @@ class KafkaService:
         self.config: dict[str, str | list[str] | int] = config
         self.consumer: KafkaConsumer | None = None
         self.producer: KafkaProducer | None = None
-        self.consumer_thread: threading.Thread | None = None
+        self.consumer_pool: ThreadPoolExecutor | None = None
+        self.consumer_count: int = int(settings.kafka_consumer_count)
         self.stop_event: threading.Event = threading.Event()
 
     def create_consumer(self) -> KafkaConsumer:
@@ -43,26 +45,23 @@ class KafkaService:
         )
 
     def start_consumer(self, message_handler: Callable) -> None:
-        if self.consumer_thread and self.consumer_thread.is_alive():
-            logger.warning("Consumer уже запущен")
+        if self.consumer_pool:
+            logger.warning("Consumer(ы) уже запущены")
             return
 
         self.stop_event.clear()
-        self.consumer_thread = threading.Thread(target=self._consume_messages, args=(message_handler,), daemon=True)
-        self.consumer_thread.start()
-        logger.info("Kafka consumer запущен")
+        self.consumer_pool = ThreadPoolExecutor(max_workers=self.consumer_count)
+        for _ in range(self.consumer_count):
+            self.consumer_pool.submit(self._consume_messages, message_handler)
+        logger.info(f"Kafka consumer запущен в {self.consumer_count} потоках")
 
     def stop_consumer(self) -> None:
-        if self.consumer_thread and self.consumer_thread.is_alive():
-            logger.info("Остановка Kafka consumer...")
+        if self.consumer_pool:
+            logger.info("Остановка Kafka consumer(ов)...")
             self.stop_event.set()
-            self.consumer_thread.join(timeout=5)
-
-        if self.consumer:
-            self.consumer.close()
-            self.consumer = None
-
-        logger.info("Kafka consumer остановлен")
+            self.consumer_pool.shutdown(wait=True)
+            self.consumer_pool = None
+            logger.info("Kafka consumer(ы) остановлены")
 
     def _consume_messages(self, message_handler: Callable) -> None:
         try:
@@ -100,5 +99,5 @@ class KafkaService:
             logger.error(f"Ошибка при отправке сообщения: {e}")
             raise
 
-    def is_consumer_running(self) -> bool | None:
-        return self.consumer_thread and self.consumer_thread.is_alive()
+    def is_consumer_running(self) -> bool:
+        return self.consumer_pool is not None

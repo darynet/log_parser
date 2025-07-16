@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from threading import Lock
 from typing import Any, AsyncGenerator, Literal
 from clickhouse_driver import Client
 from fastapi import FastAPI, HTTPException, Query
@@ -11,6 +12,9 @@ logging.basicConfig(level=logging.INFO)
 logger: logging.Logger = logging.getLogger(__name__)
 
 kafka_service: KafkaService = KafkaService(kafka_config)
+
+batch_buffer: list[tuple[str, str, datetime]] = []
+buffer_lock: Lock = Lock()
 
 client: Client = Client(
     host=settings.clickhouse_host,
@@ -34,19 +38,22 @@ def handle_kafka_message(message: dict[str, Any]) -> None:
             logger.error(f"Ошибка преобразования timestamp {message.value['timestamp']}: {e}")
             return
         except Exception as e:
-            logger.error(message)
             logger.error(f"Ошибка при обработке сообщения {message}:\n{e}")
             return
 
-        try:
-            client.execute("SHOW DATABASES")
-            client.execute(
-                f"INSERT INTO {settings.clickhouse_table} (message, hostname, timestamp) VALUES",
-                [(message.value["message"], message.value["hostname"], dt)],
-            )
-            logger.info("Сообщение записано в ClickHouse.")
-        except Exception as e:
-            logger.error(f"Ошибка при записи в ClickHouse: {e}")
+        row: tuple[str, str, datetime] = (message.value["message"], message.value["hostname"], dt)
+
+        with buffer_lock:
+            batch_buffer.append(row)
+            if len(batch_buffer) >= int(settings.batch_size):
+                try:
+                    client.execute(
+                        f"INSERT INTO {settings.clickhouse_table} (message, hostname, timestamp) VALUES", batch_buffer
+                    )
+                    logger.info(f"Вставлено {len(batch_buffer)} сообщений в ClickHouse.")
+                    batch_buffer.clear()
+                except Exception as e:
+                    logger.error(f"Ошибка при batch-вставке в ClickHouse: {e}")
 
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
