@@ -73,6 +73,12 @@ action(type="omkafka"
     template="JsonTemplate")
 ```
 
+## Запуск приложения
+
+```
+sudo docker compose -f /docker/docker-compose.yml up -d
+```
+
 ---
 
 ## Создание таблиц в ClickHouse
@@ -161,11 +167,6 @@ GET /get_logs?limit=<кол-во>&offset=<смещение>
 ### Через curl
 ```bash
 curl "http://localhost:8000/get_logs?limit=10&offset=0"
-```
-
-### Через встроенную HTTP-панель Cursor
-```
-GET http://localhost:8000/get_logs?limit=10&offset=0
 ```
 
 **Ответ:**
