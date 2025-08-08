@@ -76,6 +76,15 @@
         <replica>clickhouse-node4</replica>
     </macros>
 
+    <prometheus>
+        <endpoint>/metrics</endpoint>
+        <port>9366</port>
+        <metrics>true</metrics>
+        <events>true</events>
+        <asynchronous_metrics>true</asynchronous_metrics>
+        <errors>true</errors>
+    </prometheus>
+
     <distributed_ddl>
         <path>/clickhouse/task_queue/ddl</path>
         <pool>default</pool>

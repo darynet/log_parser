@@ -70,6 +70,15 @@
         </node>
     </zookeeper>
 
+    <prometheus>
+        <endpoint>/metrics</endpoint>
+        <port>9365</port>
+        <metrics>true</metrics>
+        <events>true</events>
+        <asynchronous_metrics>true</asynchronous_metrics>
+        <errors>true</errors>
+    </prometheus>
+
     <macros>
         <cluster>my_cluster</cluster>
         <shard>2</shard>
