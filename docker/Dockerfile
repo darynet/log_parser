@@ -6,8 +6,6 @@ COPY ../pyproject.toml ./
 RUN pip install --upgrade pip && pip install -e .[dev]
 
 COPY ../.env ./
-COPY ../app/main.py ./
-COPY ../app/config.py ./
-COPY ../app/kafka_service.py ./
+COPY ../app/* ./
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--limit-concurrency", "1000", "--limit-max-requests", "10000", "--backlog", "2048"]
