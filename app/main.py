@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import logging
 from models import MessageModel
 from config import settings
-from kafka_service import KafkaService, kafka_config
+from kafka_service import KafkaService
 import sentry_sdk
 from metrics import (
     http_requests_total,
@@ -39,9 +39,9 @@ sentry_sdk.init(
 logging.basicConfig(level=logging.INFO)
 logger: logging.Logger = logging.getLogger(__name__)
 
-kafka_service: KafkaService = KafkaService(kafka_config)
-thread_pool = ThreadPoolExecutor(max_workers=4)
-clickhouse_pool = ThreadPoolExecutor(max_workers=4)
+kafka_service: KafkaService = KafkaService()
+thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=3)
+clickhouse_pool: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=3)
 
 batch_buffer: list[tuple[int, str, str, int, datetime]] = []
 buffer_lock: Lock = Lock()
@@ -183,7 +183,7 @@ async def metrics():
 
 
 @app.post("/send-message")
-async def send_message(message: MessageModel, topic: str = settings.kafka_topic_default) -> dict[str, str]:
+async def send_message(message: MessageModel, topic: str = settings.kafka_topic) -> dict[str, str]:
     """Отправка сообщения в Kafka"""
     start_time = time.time()
     try:
